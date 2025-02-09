@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeaPhishing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 10px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      font-size: 18px;
+      color: #333;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #fff;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background-color: #007BFF;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .tips {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+    <h1>Settings</h1>
+    <label>
+      <input type="checkbox" id="toggleNotifications" />
+      Enable Notifications
+    </label>
+    <br />
+    <label>
+      <input type="checkbox" id="toggleBlocking" />
+      Enable Blocking
+    </label>
+     
+    <h1>Anti-Phishing Extension</h1>
+    <div class="status">
+        <p>Status: <span id="status">Active</span></p>
+        <p>Risk Level: <span id="risk-level">Checking...</span></p>
+    </div>
+    <button id="check-site">Analyze Current Site</button>
+    <button id="report-site">Report Suspicious Site</button>
+    <div class="tips">
+        <p><strong>Tip:</strong> Always check the URL before entering sensitive information.</p>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
