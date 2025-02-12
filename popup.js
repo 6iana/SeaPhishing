@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Get elements from the DOM
+  // get elements from the DOM
   const toggleNotifications = document.getElementById("toggleNotifications");
   const toggleDarkMode = document.getElementById("toggleDarkMode");
   const checkSiteButton = document.getElementById("check-site");
@@ -7,35 +7,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggleExtraInfoButton = document.getElementById("toggle-extra-info");
   const extraInfoDiv = document.getElementById("extra-info");
 
-  // Elements for risk breakdown
+  // elements for risk breakdown
   const riskLevelElement = document.getElementById("risk-level");
   const domainNameElement = document.getElementById("domain-name");
   const domainAgeElement = document.getElementById("domain-age");
   const connectionSecurityElement = document.getElementById("connection-security");
 
-  // Default preferences
+  // default preferences
   const defaultPreferences = {
     notificationsEnabled: true,
   };
 
-  // Notifications toggle
+  // notifications toggle
   if (toggleNotifications) {
     toggleNotifications.addEventListener("change", (e) => {
       const isChecked = e.target.checked;
       chrome.storage.sync.set(
-        {
-          userPreferences: {
-            ...defaultPreferences,
-            notificationsEnabled: isChecked,
-          },
-        },
+        { userPreferences: { ...defaultPreferences, notificationsEnabled: isChecked } },
         () => {
           console.log(`Notifications enabled: ${isChecked}`);
         }
       );
     });
-
-    // Load initial notifications state
     chrome.storage.sync.get("userPreferences", (data) => {
       const prefs = data.userPreferences || defaultPreferences;
       toggleNotifications.checked = prefs.notificationsEnabled;
@@ -44,14 +37,13 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Element with ID 'toggleNotifications' not found.");
   }
 
-  // Dark mode toggle
+  // dark mode toggle
   if (toggleDarkMode) {
     chrome.storage.sync.get("darkModeEnabled", (data) => {
       const darkModeEnabled = data.darkModeEnabled || false;
       toggleDarkMode.checked = darkModeEnabled;
       setDarkMode(darkModeEnabled);
     });
-
     toggleDarkMode.addEventListener("change", (e) => {
       const enabled = e.target.checked;
       setDarkMode(enabled);
@@ -61,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Element with ID 'toggleDarkMode' not found.");
   }
 
-  // Toggle extra info expand/collapse
+  // toggle extra info expand/collapse
   if (toggleExtraInfoButton && extraInfoDiv) {
     toggleExtraInfoButton.addEventListener("click", () => {
       if (extraInfoDiv.style.display === "none" || extraInfoDiv.style.display === "") {
@@ -74,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Analyze current site button
+  // analyse current site button
   if (checkSiteButton) {
     checkSiteButton.addEventListener("click", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -85,17 +77,17 @@ document.addEventListener("DOMContentLoaded", () => {
             riskLevelElement.textContent = "Error";
             return;
           }
-          // Update overall risk level
+          // update overall risk level
           riskLevelElement.textContent = response.riskLevel || "Unknown";
-  
-          // Update breakdown details if available
+
+          // update breakdown details if available
           if (response.breakdown) {
             domainNameElement.textContent = "Domain Name: " + response.breakdown.domainName;
             domainAgeElement.textContent = "Domain Age: " + response.breakdown.domainAge;
             connectionSecurityElement.textContent = "Connection Security: " + response.breakdown.connectionSecurity;
             document.getElementById("certificate-info").textContent = "SSL Certificate: " + response.breakdown.certificateInfo;
             document.getElementById("domain-reputation").textContent = "Domain Reputation: " + response.breakdown.domainReputation;
-            // Make the "Show Details" button visible now that we have details
+            // make the "Show Details" button visible now that we have details
             toggleExtraInfoButton.style.display = "block";
           } else {
             domainNameElement.textContent = "";
@@ -103,28 +95,35 @@ document.addEventListener("DOMContentLoaded", () => {
             connectionSecurityElement.textContent = "";
             document.getElementById("certificate-info").textContent = "";
             document.getElementById("domain-reputation").textContent = "";
-            // Optionally hide the button if no details are available
             toggleExtraInfoButton.style.display = "none";
           }
         });
       });
     });
   }
-  
 
-  // Report suspicious site button
+  // report site button
   if (reportSiteButton) {
     reportSiteButton.addEventListener("click", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const url = tabs[0].url;
-        chrome.runtime.sendMessage({ action: "reportSite", url }, () => {
-          alert("Site reported successfully!");
+        chrome.runtime.sendMessage({ action: "reportSite", url }, (response) => {
+          if (response.success) alert("Site reported successfully!");
         });
       });
     });
   }
+  // trigger the in-page notification every 30 minutes (for testing, set to 10 seconds)
+  setInterval(() => {
+    chrome.storage.sync.get("userPreferences", (data) => {
+      const prefs = data.userPreferences || defaultPreferences;
+      if (prefs.notificationsEnabled) {
+        showInPageNotification(getRandomTip());
+      }
+    });
+  }, 10000);
 
-  // Function to enable/disable dark mode
+  // function to enable/disable dark mode
   function setDarkMode(enabled) {
     if (enabled) {
       document.body.classList.add("dark-mode");

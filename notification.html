@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phishing Safety Tip</title>
+  <link rel="stylesheet" type="text/css" href="notification_style.css" />
+</head>
+<body>
+  <h1>Phishing Safety Tip</h1>
+  <p id="tip"></p>
+  <script>
+    // reads the 'tip' query parameter from the URL
+    const params = new URLSearchParams(window.location.search);
+    const tip = params.get("tip") || "Always verify the sender's email address.";
+    document.getElementById("tip").textContent = tip;
+  </script>
+</body>
+</html>

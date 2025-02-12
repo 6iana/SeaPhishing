@@ -1,10 +1,10 @@
 const API_KEY = "AAIzaSyBAbXoevPsW_tfvPcPRxcCfMxt8g6vTilk";
 const API_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${API_KEY}`;
 
-// WHOIS API key for domain age and reputation lookup (e.g., WhoisXML API)
-const WHOIS_API_KEY = "at_IJFXpXmHI7SuvLUZkxrSCLndogJkI"; // Replace with your actual WHOIS API key
+// WHOIS API key for domain age and reputation lookup
+const WHOIS_API_KEY = "at_IJFXpXmHI7SuvLUZkxrSCLndogJkI";
 
-// Default user preferences
+// default user preferences
 let userPreferences = {
   notificationsEnabled: true,
   blockingEnabled: true,
@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Listen for user preference changes
+// listen for user preference changes
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.userPreferences) {
     userPreferences = changes.userPreferences.newValue;
@@ -25,7 +25,7 @@ chrome.storage.onChanged.addListener((changes) => {
   }
 });
 
-// Dynamically add a rule to block phishing URLs
+// dynamically add a rule to block phishing URLs
 chrome.declarativeNetRequest.updateDynamicRules(
   {
     addRules: [
@@ -46,7 +46,7 @@ chrome.declarativeNetRequest.updateDynamicRules(
   }
 );
 
-// Handle notifications for phishing warnings
+// handles notifications for phishing warnings
 chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
   if (userPreferences.notificationsEnabled) {
     chrome.notifications.create({
@@ -58,11 +58,9 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
   }
 });
 
-/*---------------------------------------------------------
-  Domain Age & Reputation Lookup Using WhoisXML API
----------------------------------------------------------*/
+// domain age & reputation lookup using WhoisXML API
 
-// Retrieve domain age using WHOIS API
+// retrieving domain age using WHOIS API
 async function getDomainAge(domain) {
   const whoisUrl = `https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
   try {
@@ -86,17 +84,14 @@ async function getDomainAge(domain) {
   }
 }
 
-// Retrieve domain reputation using WHOIS API
+// retrieve domain reputation using WHOIS API
 async function getDomainReputation(domain) {
-  // Hypothetical endpoint for domain reputation lookup
   const reputationUrl = `https://www.whoisxmlapi.com/domainreputationserver/DomainReputationService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
   try {
     const response = await fetch(reputationUrl);
     const data = await response.json();
-    // Adjust the parsing logic as per the actual API response structure.
     if (data && data.DomainReputation) {
-      // For example, the API might return a reputation score or a text label
-      return data.DomainReputation; // e.g., "Good", "Poor", or a numeric score
+      return data.DomainReputation;
     } else {
       return "Unknown";
     }
@@ -106,29 +101,26 @@ async function getDomainReputation(domain) {
   }
 }
 
-/*---------------------------------------------------
-  Risk Analysis & Report Breakdown Functionality
----------------------------------------------------*/
+// risk analysis & report breakdown
+
 async function analyzeUrl(url) {
-  // Parse the URL to extract components
+  // parse the URL to extract components
   const parsedUrl = new URL(url);
   const domain = parsedUrl.hostname;
   const connectionSecurity = url.startsWith("https") ? "Secure" : "Not Secure";
   
-  // Additional SSL certificate information
+  // additional SSL certificate information
   const certificateInfo = connectionSecurity === "Secure" ? "Valid SSL Certificate" : "No SSL Certificate";
 
-  // Calculate risk factors using dummy logic:
-  // 1. Domain Name Risk: if the domain contains suspicious keywords, assign higher risk.
+  // calculating risk factors using dummy logic:
+  // domain name risk
   const domainNameRisk = (domain.includes("phish") || domain.includes("scam")) ? 50 : 0;
   
-  // 2. Connection Security Risk: if the URL is not secure, add risk.
+  // connection security risk
   const connectionRisk = url.startsWith("https") ? 0 : 30;
   
-  // 3. Domain Age Risk: Get the actual domain age using the WHOIS API
+  // domain age risk, gets the actual domain age using the WHOIS API
   const domainAgeString = await getDomainAge(domain);
-  
-  // Determine domain age risk based on the retrieved age
   let domainAgeRisk = 10; // default low risk
   if (domainAgeString === "Unknown") {
     domainAgeRisk = 40;
@@ -141,19 +133,18 @@ async function analyzeUrl(url) {
     }
   }
   
-  // 4. Domain Reputation Risk: Optionally, you could adjust risk based on reputation.
+  // domain reputation risk
   const domainReputation = await getDomainReputation(domain);
-  // For example, if reputation is "Poor", add extra risk.
   let reputationRisk = 0;
   if (domainReputation.toLowerCase() === "poor") {
     reputationRisk = 30;
   }
   
-  // Compute the overall risk percentage and cap it at 100%
+  // compute the overall risk percentage and cap it at 100%
   let totalRisk = domainNameRisk + connectionRisk + domainAgeRisk + reputationRisk;
   if (totalRisk > 100) totalRisk = 100;
   
-  // Simulate a delay (for demonstration)
+  // simulating a delay
   await new Promise(resolve => setTimeout(resolve, 500));
 
   return {
@@ -168,10 +159,70 @@ async function analyzeUrl(url) {
   };
 }
 
-// Listen for messages from the popup to analyze the current site URL
+// custom in-page notification for phishing safety tips
+const phishingTips = [
+  "Always verify the sender's email address before clicking any link.",
+  "Hover over links to see the real URL before clicking.",
+  "Be cautious with urgent requests for personal information.",
+  "Check for HTTPS and a padlock icon before entering sensitive data.",
+  "Keep your browser updated to minimize security vulnerabilities.",
+  "Use a password manager to generate and store complex passwords.",
+  "Enable multi-factor authentication for extra security."
+];
+
+function getRandomTip() {
+  return phishingTips[Math.floor(Math.random() * phishingTips.length)];
+}
+
+function showInPageNotification(message) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: (msg) => {
+          // Create or reuse an overlay element on the active page
+          let overlay = document.getElementById("phishingTipOverlay");
+          if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "phishingTipOverlay";
+            overlay.style.position = "fixed";
+            overlay.style.bottom = "20px";
+            overlay.style.right = "20px";
+            overlay.style.backgroundColor = "#2D2C2C";
+            overlay.style.color = "#fff";
+            overlay.style.padding = "15px";
+            overlay.style.borderRadius = "5px";
+            overlay.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+            overlay.style.zIndex = "10000";
+            overlay.style.maxWidth = "300px";
+            document.body.appendChild(overlay);
+          }
+          overlay.textContent = msg;
+          overlay.style.display = "block";
+          setTimeout(() => {
+            overlay.style.display = "none";
+          }, 5000);
+        },
+        args: [message]
+      });
+    }
+  });
+}
+
+// an alarm to trigger the custom in-page notification.
+
+chrome.alarms.create("phishingTipAlarm", { periodInMinutes: 0.1667 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "phishingTipAlarm" && userPreferences.notificationsEnabled) {
+    const tip = getRandomTip();
+    showInPageNotification(tip);
+  }
+});
+
+// message listener for popup communication
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "analyzeUrl") {
-    // Handle URL analysis
     (async () => {
       try {
         const result = await analyzeUrl(message.url);
@@ -181,9 +232,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ riskLevel: "Unknown", breakdown: {} });
       }
     })();
-    return true; // Indicate asynchronous response
+    return true; // indicates asynchronous response
   } else if (message.action === "reportSite") {
-    // Handle website reporting
     const reportedUrl = message.url;
     chrome.storage.local.get({ reportedSites: [] }, (result) => {
       const reportedSites = result.reportedSites;
@@ -196,8 +246,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       });
     });
-    return true; // Indicate asynchronous response
+    return true; // indicates asynchronous response
   }
 });
-
-

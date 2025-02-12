@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Anti-Phishing Extension",
+  "name": "SeaPhishing: An Anti-Phishing Extension",
   "description": "A Chrome extension to protect users from phishing attacks and educate them on online safety.",
   "version": "1.0",
   "icons": {
@@ -14,7 +14,9 @@
     "tabs",
     "activeTab",
     "notifications",
-    "storage"
+    "storage",
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
