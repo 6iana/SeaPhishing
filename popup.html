@@ -3,14 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Link to main popup styles -->
   <link rel="stylesheet" type="text/css" href="style.css" />
+
+  <!-- Load Google Fonts (Inter family) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+
+  <!-- Page title shown on the popup tab -->
   <title>SeaPhishing</title>
 </head>
 <body>
-  <!-- title bar with dark mode toggle-->
+
+  <!-- Top title bar with dark mode toggle -->
   <div class="title-bar">
     <div class="title-text">Sea<i><b>Phishing</b></i></div>
     <label class="switch">
@@ -18,36 +25,46 @@
       <span class="slider"></span>
     </label>
   </div>
-  <div class="popup-container">
-    <!-- header with title and report + notifications button -->
-    <div class="settings-header">
-      <h1 class="settings-title">Settings</h1>
-      <button id="report-site" class="report-btn">Report this website</button>
+
+  <!-- Top row with notification bell and report button -->
+  <div class="top-buttons">
+    <div class="notifications-toggle">
+      <img id="notificationBell" src="icons/bell144.png" alt="Notifications" style="width: 32px; height: 32px; cursor: pointer;">
     </div>
-    <label>
-      <input type="checkbox" id="toggleNotifications" />
-      Enable Notifications
-    </label>
-    <br />
+    <button id="report-site" class="report-btn">Report this website</button>
+  </div>
+
+  <!-- Main container holding the phishing risk report -->
+  <div class="popup-container">
     <h1>Phishing Risk Calculation Report</h1>
     <div class="status">
       <p>Status: <span id="status">Active</span></p>
       <p>Risk Level: <span id="risk-level">Checking...</span></p>
+      <p>Connection Security: <span id="connection-security-main">Checking...</span></p>
+
+      <!-- Extra information section (hidden by default) -->
       <div id="extra-info">
         <p id="domain-name"></p>
         <p id="domain-age"></p>
         <p id="domain-reputation"></p>
         <p id="connection-security"></p>
         <p id="certificate-info"></p>
-        
       </div>
+
+      <!-- Button to toggle showing/hiding extra details -->
       <button id="toggle-extra-info">Show Details</button>
     </div>
+
+    <!-- Button to trigger site analysis -->
     <div class="button-container">
       <button id="check-site">Analyse Current Site</button>
     </div>
+
+    <!-- Custom notification area (hidden by default) -->
     <div id="customNotification" class="notification" style="display: none;"></div>
   </div>
+
+  <!-- Main popup JavaScript -->
   <script src="popup.js"></script>
 </body>
 </html>

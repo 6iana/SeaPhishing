@@ -1,12 +1,39 @@
+
 [
-    {
-      "id": 1,
-      "priority": 1,
-      "action": { "type": "block" },
-      "condition": {
-        "urlFilter": "*malicious-example.com*",
-        "resourceTypes": ["main_frame"]
-      }
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*malicious-example.com*",
+      "resourceTypes": ["main_frame"]
     }
-  ]
-  
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*phishingsite.com*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*scam-alert.net*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*login-secure-update.info*",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

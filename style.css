@@ -1,10 +1,12 @@
+
 body {
   font-family: 'Inter', sans-serif;
   margin: 0;
   background-color: #F6F5F4;
   width: 410px;
 }
-/* Title Bar Style */
+
+/* Title bar Style */
 .title-bar {
   width: 100%;
   background-color: #D9D9D9;
@@ -17,7 +19,22 @@ body {
   padding: 5px;
   box-sizing: border-box;
 }
-/* Dark Mode Toggle Switch */
+
+/* Top buttons row (bell + report buttons) */
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+}
+
+.notifications-toggle {
+  display: flex;
+  align-items: center;
+}
+
+/* Dark mode toggle Switch */
 .switch {
   position: relative;
   display: inline-block;
@@ -57,24 +74,15 @@ body {
 .switch input:checked + .slider:before {
   transform: translateX(26px);
 }
-/* Popup Container */
+
+/* Popup container */
 .popup-container {
   width: 400px;
   margin: auto;
   padding: 10px;
 }
-/* Settings Header */
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.settings-title {
-  font-size: 13px;
-  color: #333;
-  margin: 0;
-}
+
+/* Report button */
 .report-btn {
   background-color: red;
   color: #fff;
@@ -87,12 +95,15 @@ body {
 .report-btn:hover {
   background-color: darkred;
 }
+
+/* Main headings */
 h1 {
   font-size: 18px;
   color: #333;
   margin: 0;
 }
-/* Status Box */
+
+/* Status box */
 .status {
   margin: 10px;
   padding: 10px;
@@ -103,7 +114,8 @@ h1 {
 .status p {
   margin: 5px 0;
 }
-/* Extra Info Section */
+
+/* Extra info section */
 #extra-info {
   display: none;
   margin-top: 10px;
@@ -120,7 +132,8 @@ h1 {
   font-size: 14px;
   text-decoration: underline;
 }
-/* Button Container */
+
+/* Button container */
 .button-container {
   text-align: center;
   margin-top: 10px;
@@ -137,7 +150,8 @@ h1 {
 .button-container button:hover {
   background-color: #000;
 }
-/* Dark Mode Styles */
+
+/* Dark mode styles */
 .dark-mode {
   background-color: #797776;
   color: #000;

@@ -1,165 +1,15 @@
-const API_KEY = "AAIzaSyBAbXoevPsW_tfvPcPRxcCfMxt8g6vTilk";
-const API_URL = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${API_KEY}`;
+// API Keys
+const GOOGLE_API_KEY = "AAIzaSyBAbXoevPsW_tfvPcPRxcCfMxt8g6vTilk";
+const WHOIS_API_KEY = "at_7sWxjcWKqZQoReHwtu8BacrpreX53";
+const THREATFOX_API_KEY = "9587774f7a5eeba17212e6fac0a38b62a07499f9e3af704c";
 
-// WHOIS API key for domain age and reputation lookup
-const WHOIS_API_KEY = "at_IJFXpXmHI7SuvLUZkxrSCLndogJkI";
-
-// default user preferences
+// Default user preferences
 let userPreferences = {
   notificationsEnabled: true,
   blockingEnabled: true,
 };
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Anti-Phishing Extension installed!");
-  chrome.storage.sync.set({ userPreferences }, () => {
-    console.log("Default preferences saved:", userPreferences);
-  });
-});
-
-// listen for user preference changes
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.userPreferences) {
-    userPreferences = changes.userPreferences.newValue;
-    console.log("User preferences updated:", userPreferences);
-  }
-});
-
-// dynamically add a rule to block phishing URLs
-chrome.declarativeNetRequest.updateDynamicRules(
-  {
-    addRules: [
-      {
-        id: 1,
-        priority: 1,
-        action: { type: "block" },
-        condition: {
-          urlFilter: "*suspicious-site.com*",
-          resourceTypes: ["main_frame"],
-        },
-      },
-    ],
-    removeRuleIds: [1],
-  },
-  () => {
-    console.log("Dynamic rules updated.");
-  }
-);
-
-// handles notifications for phishing warnings
-chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-  if (userPreferences.notificationsEnabled) {
-    chrome.notifications.create({
-      type: "basic",
-      iconUrl: "icons/icon48.png",
-      title: "Phishing Alert!",
-      message: `The site (${info.url}) matches a known phishing pattern.`,
-    });
-  }
-});
-
-// domain age & reputation lookup using WhoisXML API
-
-// retrieving domain age using WHOIS API
-async function getDomainAge(domain) {
-  const whoisUrl = `https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
-  try {
-    const response = await fetch(whoisUrl);
-    const data = await response.json();
-    if (data && data.WhoisRecord && data.WhoisRecord.createdDateNormalized) {
-      const creationDate = new Date(data.WhoisRecord.createdDateNormalized);
-      const currentDate = new Date();
-      let ageInYears = currentDate.getFullYear() - creationDate.getFullYear();
-      const monthDiff = currentDate.getMonth() - creationDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < creationDate.getDate())) {
-        ageInYears--;
-      }
-      return ageInYears + " years";
-    } else {
-      return "Unknown";
-    }
-  } catch (error) {
-    console.error("Error fetching WHOIS data:", error);
-    return "Unknown";
-  }
-}
-
-// retrieve domain reputation using WHOIS API
-async function getDomainReputation(domain) {
-  const reputationUrl = `https://www.whoisxmlapi.com/domainreputationserver/DomainReputationService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
-  try {
-    const response = await fetch(reputationUrl);
-    const data = await response.json();
-    if (data && data.DomainReputation) {
-      return data.DomainReputation;
-    } else {
-      return "Unknown";
-    }
-  } catch (error) {
-    console.error("Error fetching domain reputation:", error);
-    return "Unknown";
-  }
-}
-
-// risk analysis & report breakdown
-
-async function analyzeUrl(url) {
-  // parse the URL to extract components
-  const parsedUrl = new URL(url);
-  const domain = parsedUrl.hostname;
-  const connectionSecurity = url.startsWith("https") ? "Secure" : "Not Secure";
-  
-  // additional SSL certificate information
-  const certificateInfo = connectionSecurity === "Secure" ? "Valid SSL Certificate" : "No SSL Certificate";
-
-  // calculating risk factors using dummy logic:
-  // domain name risk
-  const domainNameRisk = (domain.includes("phish") || domain.includes("scam")) ? 50 : 0;
-  
-  // connection security risk
-  const connectionRisk = url.startsWith("https") ? 0 : 30;
-  
-  // domain age risk, gets the actual domain age using the WHOIS API
-  const domainAgeString = await getDomainAge(domain);
-  let domainAgeRisk = 10; // default low risk
-  if (domainAgeString === "Unknown") {
-    domainAgeRisk = 40;
-  } else {
-    const ageNumber = parseInt(domainAgeString);
-    if (ageNumber < 2) {
-      domainAgeRisk = 40;
-    } else {
-      domainAgeRisk = 10;
-    }
-  }
-  
-  // domain reputation risk
-  const domainReputation = await getDomainReputation(domain);
-  let reputationRisk = 0;
-  if (domainReputation.toLowerCase() === "poor") {
-    reputationRisk = 30;
-  }
-  
-  // compute the overall risk percentage and cap it at 100%
-  let totalRisk = domainNameRisk + connectionRisk + domainAgeRisk + reputationRisk;
-  if (totalRisk > 100) totalRisk = 100;
-  
-  // simulating a delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  return {
-    riskLevel: totalRisk + "%",
-    breakdown: {
-      domainName: domain,
-      domainAge: domainAgeString,
-      connectionSecurity: connectionSecurity,
-      certificateInfo: certificateInfo,
-      domainReputation: domainReputation
-    }
-  };
-}
-
-// custom in-page notification for phishing safety tips
+// Safety tip messages shown periodically
 const phishingTips = [
   "Always verify the sender's email address before clicking any link.",
   "Hover over links to see the real URL before clicking.",
@@ -170,17 +20,18 @@ const phishingTips = [
   "Enable multi-factor authentication for extra security."
 ];
 
+// Get a random tip from the list
 function getRandomTip() {
   return phishingTips[Math.floor(Math.random() * phishingTips.length)];
 }
 
+// Inject an in-page notification box into the active tab
 function showInPageNotification(message) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]) {
       chrome.scripting.executeScript({
         target: { tabId: tabs[0].id },
         func: (msg) => {
-          // Create or reuse an overlay element on the active page
           let overlay = document.getElementById("phishingTipOverlay");
           if (!overlay) {
             overlay = document.createElement("div");
@@ -209,43 +60,198 @@ function showInPageNotification(message) {
   });
 }
 
-// an alarm to trigger the custom in-page notification.
+// Setup on extension install
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.set({ userPreferences }, () => {
+    console.log("Default preferences saved:", userPreferences);
+  });
+  fetchThreatFoxPhishingDomains();
+});
 
-chrome.alarms.create("phishingTipAlarm", { periodInMinutes: 0.1667 });
+// Create alarms: one for refreshing phishing domains, one for showing tips
+chrome.alarms.create("refreshThreatFoxDomains", { periodInMinutes: 720 }); // every 12 hours
+chrome.alarms.create("phishingTipAlarm", { periodInMinutes: 0.166667 }); // every 30 minutes
 
+// Alarm listeners
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "phishingTipAlarm" && userPreferences.notificationsEnabled) {
-    const tip = getRandomTip();
-    showInPageNotification(tip);
+  if (alarm.name === "refreshThreatFoxDomains") {
+    fetchThreatFoxPhishingDomains();
+  } else if (alarm.name === "phishingTipAlarm") {
+    chrome.storage.sync.get('userPreferences', (data) => {
+      if (data.userPreferences && data.userPreferences.notificationsEnabled) {
+        const tip = getRandomTip();
+        showInPageNotification(tip);
+      }
+    });
   }
 });
 
-// message listener for popup communication
+// Fetch phishing domains from ThreatFox API
+async function fetchThreatFoxPhishingDomains() {
+  const response = await fetch("https://threatfox-api.abuse.ch/api/v1/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: "get_iocs",
+      api_key: THREATFOX_API_KEY,
+      ioc_type: "url",
+      malware: "phishing"
+    })
+  });
+
+  const data = await response.json();
+  const phishingDomains = new Set();
+
+  if (data && data.data) {
+    data.data.forEach((entry) => {
+      if (entry.ioc.startsWith("http://") || entry.ioc.startsWith("https://")) {
+        try {
+          const url = new URL(entry.ioc);
+          phishingDomains.add(url.hostname);
+        } catch (e) {
+          console.warn("Invalid URL in ThreatFox feed:", entry.ioc);
+        }
+      }
+    });
+  }
+
+  chrome.storage.local.set({ phishingDomains: Array.from(phishingDomains) }, () => {
+    console.log("ThreatFox domains stored locally.");
+  });
+}
+
+// WHOIS API: Get domain age
+async function getDomainAge(domain) {
+  const whoisUrl = `https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
+  try {
+    const response = await fetch(whoisUrl);
+    const data = await response.json();
+    if (data && data.WhoisRecord && data.WhoisRecord.createdDateNormalized) {
+      const creationDate = new Date(data.WhoisRecord.createdDateNormalized);
+      const currentDate = new Date();
+      let ageInYears = currentDate.getFullYear() - creationDate.getFullYear();
+      const monthDiff = currentDate.getMonth() - creationDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < creationDate.getDate())) {
+        ageInYears--;
+      }
+      return ageInYears + " years";
+    } else {
+      return "Unknown";
+    }
+  } catch (error) {
+    console.error("Error fetching WHOIS data:", error);
+    return "Unknown";
+  }
+}
+
+// WHOIS API: Get domain reputation
+async function getDomainReputation(domain) {
+  const reputationUrl = `https://www.whoisxmlapi.com/domainreputationserver/DomainReputationService?apiKey=${WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`;
+  try {
+    const response = await fetch(reputationUrl);
+    const contentType = response.headers.get('content-type');
+    const text = await response.text();
+
+    if (contentType && contentType.includes('application/json')) {
+      const data = JSON.parse(text);
+      if (data && data.DomainReputation) {
+        return data.DomainReputation;
+      } else {
+        return "Unknown";
+      }
+    } else {
+      console.warn("WHOIS reputation API returned non-JSON:", text);
+      return "Unavailable";
+    }
+  } catch (error) {
+    console.error("Error fetching domain reputation:", error);
+    return "Unknown";
+  }
+}
+
+// Main risk analysis function
+async function analyseUrl(url, tabId) {
+  const parsedUrl = new URL(url);
+  const domain = parsedUrl.hostname;
+  const connectionSecurity = url.startsWith("https") ? "Secure" : "Not Secure";
+  const certificateInfo = connectionSecurity === "Secure" ? "Valid SSL Certificate" : "No SSL Certificate";
+
+  let domainNameRisk = (domain.includes("phish") || domain.includes("scam")) ? 50 : 0;
+  let connectionRisk = url.startsWith("https") ? 0 : 30;
+  let domainAgeString = await getDomainAge(domain);
+  let domainAgeRisk = domainAgeString === "Unknown" ? 40 : (parseInt(domainAgeString) < 2 ? 40 : 10);
+  let domainReputation = await getDomainReputation(domain);
+  let reputationRisk = (domainReputation.toLowerCase() === "poor") ? 30 : 0;
+
+  let totalRisk = domainNameRisk + connectionRisk + domainAgeRisk + reputationRisk;
+  if (totalRisk > 100) totalRisk = 100;
+
+  // Check if the domain is in ThreatFox list and show notification
+  const localData = await new Promise(resolve => {
+    chrome.storage.local.get("phishingDomains", resolve);
+  });
+  const threatFoxDomains = localData.phishingDomains || [];
+  if (threatFoxDomains.includes(domain)) {
+    totalRisk = 100;
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon48.png",
+      title: "⚠ Phishing Warning",
+      message: "The website you are about to access is a phishing website!",
+      priority: 2
+    });
+  }
+
+  return {
+    riskLevel: totalRisk + "%",
+    breakdown: {
+      domainName: domain,
+      domainAge: domainAgeString,
+      connectionSecurity: connectionSecurity,
+      certificateInfo: certificateInfo,
+      domainReputation: domainReputation
+    }
+  };
+}
+
+// Automatically analyse every tab when it finishes loading
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    analyseUrl(tab.url, tabId);
+  }
+});
+
+// Handle incoming messages from the popup or other parts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "analyzeUrl") {
+  if (message.action === "analyseUrl") {
     (async () => {
       try {
-        const result = await analyzeUrl(message.url);
+        const result = await analyseUrl(message.url, sender.tab ? sender.tab.id : null);
         sendResponse(result);
       } catch (error) {
-        console.error("Error analyzing URL:", error);
+        console.error("Error analysing URL:", error);
         sendResponse({ riskLevel: "Unknown", breakdown: {} });
       }
     })();
-    return true; // indicates asynchronous response
+    return true; // async response
   } else if (message.action === "reportSite") {
     const reportedUrl = message.url;
     chrome.storage.local.get({ reportedSites: [] }, (result) => {
       const reportedSites = result.reportedSites;
-      reportedSites.push({
-        url: reportedUrl,
-        reportedAt: new Date().toISOString()
-      });
-      chrome.storage.local.set({ reportedSites: reportedSites }, () => {
+      reportedSites.push({ url: reportedUrl, reportedAt: new Date().toISOString() });
+      chrome.storage.local.set({ reportedSites }, () => {
         console.log("Reported sites updated:", reportedSites);
         sendResponse({ success: true });
       });
     });
-    return true; // indicates asynchronous response
+    return true;
+  } else if (message.action === 'createNotification') {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: message.title,
+      message: message.message,
+      priority: 2
+    });
   }
 });
